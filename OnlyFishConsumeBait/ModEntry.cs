@@ -12,8 +12,8 @@ internal sealed class ModEntry : Mod
     private IGenericModConfigMenuApi? configMenu;
     private ModConfig? config;
     private Farmer? player;
-    private Object? bait;
     private int isFish = -1;
+    private int baitCount = -1;
 
     public override void Entry(IModHelper helper)
     {
@@ -75,12 +75,12 @@ internal sealed class ModEntry : Mod
         if (helper == null || config == null || player == null) return;
         if (!config.EnableMod) return;
         if (player.CurrentTool is not FishingRod rod) return;
-        if (rod.isFishing && rod.GetBait() != null && bait == null)
+        if (rod.isFishing && rod.GetBait() != null && baitCount < 0)
         {
             Object tempBait = rod.GetBait();
-            bait = new(tempBait.ItemId, tempBait.Stack, false, tempBait.Price, tempBait.Quality);
+            baitCount = tempBait == null ? 0 : tempBait.Stack;
         }
-        if (rod.pullingOutOfWater && rod.whichFish != null && bait != null && isFish < 0)
+        if (rod.pullingOutOfWater && rod.whichFish != null && baitCount > 0 && isFish < 0)
         {
             if (rod.whichFish.GetParsedData().Category == -4) isFish = 1;
             else
@@ -89,10 +89,10 @@ internal sealed class ModEntry : Mod
                 isFish = 0;
             }
         }
-        if (!rod.isFishing && !rod.pullingOutOfWater && !rod.fishCaught && (bait != null || isFish >= 0))
+        if (!rod.isFishing && !rod.pullingOutOfWater && !rod.fishCaught && (baitCount >= 0  || isFish >= 0))
         {
-            if (isFish == 0) rod.attachments[0] = bait;
-            if (bait != null) bait = null;
+            if (isFish == 0) rod.GetBait().Stack = baitCount;
+            if (baitCount >= 0) baitCount = -1;
             if (isFish >= 0) isFish = -1;
         }
     }
